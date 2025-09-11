@@ -35,7 +35,9 @@ export default function CustomersPage() {
 
   // Update local state when API data changes
   useEffect(() => {
+    console.log("uuu")
     if (visitorsState.data) {
+      console.log(visitorsState)
       setVisitors(visitorsState.data)
     }
   }, [visitorsState.data])
@@ -237,10 +239,10 @@ export default function CustomersPage() {
                 </div>
               </div>
 
-              <div className="mt-3">
+              {/* <div className="mt-3">
                 <p className="text-sm text-gray-500 mb-1">Location</p>
                 <p className="text-sm font-medium text-gray-900">{getLocation(visitor)}</p>
-              </div>
+              </div> */}
             </CardContent>
           </Card>
         ))}

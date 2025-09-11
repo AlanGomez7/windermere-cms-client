@@ -157,7 +157,10 @@ class ApiClient {
         throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
 
-      return await response.json();
+      const result =  await response.json();
+      console.log(result)
+      return result
+      
     } catch (error) {
       console.error('API request failed:', error);
       throw error;

@@ -1,51 +1,221 @@
 "use client"
 
 import type React from "react"
+import { useState, useEffect } from "react"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { MoreHorizontal, TrendingUp, Building2, ArrowUp } from "lucide-react"
+import { MoreHorizontal, TrendingUp, Home, Users, Calendar, Star, CheckCircle, ArrowUp, Loader2 } from "lucide-react"
 import { useGSAPAnimations, useHoverAnimations, useButtonAnimations } from "@/hooks/use-gsap-animations"
+
+// Types for API response
+interface DashboardData {
+  users: {
+    total: number
+    admins: number
+    visitors: number
+  }
+  reviews: {
+    total: number
+    pending: number
+    approved: number
+    withRating: number
+  }
+  bookings: {
+    total: number
+    pending: number
+    cancelled: number
+    confirmed: number
+  }
+  enquiries: {
+    total: number
+  }
+  locations: {
+    cities: number
+  }
+  properties: {
+    total: number
+    active: number
+    avgPrice: number
+    currency: string
+    inactive: number
+    avgPetsFee: number
+    avgCleaningFee: number
+  }
+  monthly_revenue: Array<{
+    month: string
+    currency: string
+    totalRevenue: number
+    successfulPayments: number
+  }>
+}
 
 export default function Dashboard() {
   const containerRef = useGSAPAnimations()
   useHoverAnimations()
   useButtonAnimations()
 
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Fetch dashboard data from API
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const response = await fetch('https://pnboapcclagdszlabiwp.supabase.co/functions/v1/dashboard-endpoint', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuYm9hcGNjbGFnZHN6bGFiaXdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1NDgwMjIsImV4cCI6MjA3MTEyNDAyMn0.502UKaBbcbgHCOjrX51u6hs6yjETZkOYcPl6ca4x3lM',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ name: "Functions" })
+        })
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch dashboard data: ${response.status}`)
+        }
+
+        const data = await response.json()
+        setDashboardData(data)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch dashboard data')
+        // Fallback to sample data for development
+        setDashboardData({
+          users: {
+            total: 0,
+            admins: 0,
+            visitors: 0
+          },
+          reviews: {
+            total: 0,
+            pending: 0,
+            approved: 0,
+            withRating: 0
+          },
+          bookings: {
+            total: 0,
+            pending: 0,
+            cancelled: 1,
+            confirmed: 6
+          },
+          enquiries: {
+            total: 3
+          },
+          locations: {
+            cities: 1
+          },
+          properties: {
+            total: 0,
+            active: 3,
+            avgPrice: 126.67,
+            currency: "GBP",
+            inactive: 0,
+            avgPetsFee: 25,
+            avgCleaningFee: 100
+          },
+          monthly_revenue: [
+            {
+              month: "2024-02",
+              currency: "GBP",
+              totalRevenue: 2275,
+              successfulPayments: 2
+            },
+            {
+              month: "2024-03",
+              currency: "GBP",
+              totalRevenue: 960,
+              successfulPayments: 1
+            },
+            {
+              month: "2024-04",
+              currency: "GBP",
+              totalRevenue: 2100,
+              successfulPayments: 2
+            },
+            {
+              month: "2024-05",
+              currency: "GBP",
+              totalRevenue: 675,
+              successfulPayments: 1
+            }
+          ]
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDashboardData()
+  }, [])
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="p-4 lg:p-6 space-y-6 bg-gray-50 min-h-full">
+        <div className="flex items-center justify-center h-64">
+          <div className="flex items-center space-x-2">
+            <Loader2 className="w-6 h-6 animate-spin text-gray-600" />
+            <span className="text-gray-600">Loading dashboard...</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="p-4 lg:p-6 space-y-6 bg-gray-50 min-h-full">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="text-red-500 mb-2">Error loading dashboard</div>
+            <div className="text-gray-600 text-sm">{error}</div>
+            <Button 
+              className="mt-4" 
+              onClick={() => window.location.reload()}
+            >
+              Retry
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // No data state
+  if (!dashboardData) {
+    return (
+      <div className="p-4 lg:p-6 space-y-6 bg-gray-50 min-h-full">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center text-gray-600">
+            No dashboard data available
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Calculate total revenue
+  const totalRevenue = dashboardData.monthly_revenue.reduce((sum, month) => sum + month.totalRevenue, 0)
+  const latestMonth = dashboardData.monthly_revenue[dashboardData.monthly_revenue.length - 1]
+
   return (
     <div ref={containerRef} className="p-4 lg:p-6 space-y-6 bg-gray-50 min-h-full">
-      {/* Stats Cards */}
+      {/* Stats Cards - Essential Business Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
-        <Card className="animate-card hover-lift bg-blue-500 text-white border-0 shadow-lg overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-600"></div>
-          <CardContent className="p-4 lg:p-6 relative z-10">
-            <div className="flex items-center justify-between">
-              <div className="animate-stat">
-                <p className="text-blue-100 text-sm">Properties for Sale</p>
-                <p className="text-2xl lg:text-3xl font-bold">684</p>
-              </div>
-              <div className="relative w-12 h-12 lg:w-16 lg:h-16 animate-float">
-                <div className="w-full h-full bg-blue-400 rounded-full opacity-30"></div>
-                <div className="absolute inset-2 bg-blue-300 rounded-full opacity-50"></div>
-                <div className="absolute inset-3 lg:inset-4 bg-white rounded-full opacity-20"></div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         <Card className="animate-card hover-lift bg-green-500 text-white border-0 shadow-lg overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-green-600"></div>
           <CardContent className="p-4 lg:p-6 relative z-10">
             <div className="flex items-center justify-between">
               <div className="animate-stat">
-                <p className="text-green-100 text-sm">Properties for Rent</p>
-                <p className="text-2xl lg:text-3xl font-bold">546</p>
+                <p className="text-green-100 text-sm">Total Revenue</p>
+                <p className="text-2xl lg:text-3xl font-bold">£{totalRevenue.toLocaleString()}</p>
+                <p className="text-green-200 text-xs">4 months</p>
               </div>
               <div className="relative w-12 h-12 lg:w-16 lg:h-16 animate-float">
-                <div className="w-full h-full bg-green-400 rounded-full opacity-30"></div>
-                <div className="absolute inset-2 bg-green-300 rounded-full opacity-50"></div>
-                <div className="absolute inset-3 lg:inset-4 bg-white rounded-full opacity-20"></div>
+                <TrendingUp className="w-8 h-8 lg:w-10 lg:h-10 text-green-200 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
               </div>
             </div>
           </CardContent>
@@ -56,49 +226,64 @@ export default function Dashboard() {
           <CardContent className="p-4 lg:p-6 relative z-10">
             <div className="flex items-center justify-between">
               <div className="animate-stat">
-                <p className="text-orange-100 text-sm">Total Customer</p>
-                <p className="text-2xl lg:text-3xl font-bold">3,672</p>
+                <p className="text-orange-100 text-sm">Total Bookings</p>
+                <p className="text-2xl lg:text-3xl font-bold">{dashboardData.bookings.total}</p>
+                <p className="text-orange-200 text-xs">{dashboardData.bookings.confirmed} confirmed</p>
               </div>
               <div className="relative w-12 h-12 lg:w-16 lg:h-16 animate-float">
-                <div className="w-full h-full bg-orange-400 rounded-full opacity-30"></div>
-                <div className="absolute inset-2 bg-orange-300 rounded-full opacity-50"></div>
-                <div className="absolute inset-3 lg:inset-4 bg-white rounded-full opacity-20"></div>
+                <Calendar className="w-8 h-8 lg:w-10 lg:h-10 text-orange-200 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="animate-card hover-lift bg-gray-600 text-white border-0 shadow-lg overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-gray-500 to-gray-700"></div>
+        <Card className="animate-card hover-lift bg-blue-500 text-white border-0 shadow-lg overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-600"></div>
           <CardContent className="p-4 lg:p-6 relative z-10">
             <div className="flex items-center justify-between">
               <div className="animate-stat">
-                <p className="text-gray-300 text-sm">Total City</p>
-                <p className="text-2xl lg:text-3xl font-bold">75</p>
+                <p className="text-blue-100 text-sm">Total Guests</p>
+                <p className="text-2xl lg:text-3xl font-bold">{dashboardData.users.total}</p>
+                <p className="text-blue-200 text-xs">{dashboardData.users.visitors} visitors</p>
               </div>
               <div className="relative w-12 h-12 lg:w-16 lg:h-16 animate-float">
-                <div className="w-full h-full bg-gray-500 rounded-full opacity-30"></div>
-                <div className="absolute inset-2 bg-gray-400 rounded-full opacity-50"></div>
-                <div className="absolute inset-3 lg:inset-4 bg-white rounded-full opacity-20"></div>
+                <Users className="w-8 h-8 lg:w-10 lg:h-10 text-blue-200 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="animate-card hover-lift bg-purple-500 text-white border-0 shadow-lg overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-400 to-purple-600"></div>
+          <CardContent className="p-4 lg:p-6 relative z-10">
+            <div className="flex items-center justify-between">
+              <div className="animate-stat">
+                <p className="text-purple-100 text-sm">Enquiries</p>
+                <p className="text-2xl lg:text-3xl font-bold">{dashboardData.enquiries.total}</p>
+                <p className="text-purple-200 text-xs">need follow-up</p>
+              </div>
+              <div className="relative w-12 h-12 lg:w-16 lg:h-16 animate-float">
+                <CheckCircle className="w-8 h-8 lg:w-10 lg:h-10 text-purple-200 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Charts Section */}
+      {/* Revenue & Bookings Overview */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-6">
-        {/* Revenue Chart */}
+        {/* Monthly Revenue Chart */}
         <Card className="animate-card hover-lift xl:col-span-2 shadow-sm bg-white/80 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-4">
             <div>
-              <CardTitle className="text-lg font-semibold">Total Revenue</CardTitle>
+              <CardTitle className="text-lg font-semibold">Monthly Revenue</CardTitle>
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2">
-                <span className="text-xl lg:text-2xl font-bold animate-stat">£678,345</span>
-                <span className="text-sm text-gray-500 animate-stat">last month £563,443</span>
+                <span className="text-xl lg:text-2xl font-bold animate-stat">
+                  £{latestMonth.totalRevenue.toLocaleString()}
+                </span>
                 <div className="flex items-center text-green-500 text-sm animate-stat">
                   <TrendingUp className="w-4 h-4 mr-1" />
-                  7%
+                  Last Month (May)
                 </div>
               </div>
             </div>
@@ -107,393 +292,173 @@ export default function Dashboard() {
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="h-32 lg:h-48 flex items-end justify-between gap-1">
-              {[40, 60, 80, 45, 70, 55, 85, 65, 90, 75, 95, 80, 70, 85, 60].map((height, i) => (
-                <div
-                  key={i}
-                  className="animate-chart-bar bg-gradient-to-t from-teal-600 to-teal-400 rounded-t flex-1 min-w-[4px] lg:min-w-[8px] shadow-sm"
-                  style={{ height: `${height}%` }}
-                />
-              ))}
-            </div>
-            <div className="flex justify-between text-xs text-gray-500 mt-2">
-              <span>06</span>
-              <span className="hidden sm:inline">08</span>
-              <span>10</span>
-              <span className="hidden sm:inline">12</span>
-              <span>14</span>
-              <span className="hidden sm:inline">16</span>
-              <span>18</span>
-              <span>20</span>
+            <div className="h-32 lg:h-48 flex items-end justify-between gap-2">
+              {dashboardData.monthly_revenue.map((month, i) => {
+                const height = (month.totalRevenue / Math.max(...dashboardData.monthly_revenue.map(m => m.totalRevenue))) * 100
+                return (
+                  <div key={i} className="flex-1 flex flex-col items-center gap-2">
+                    <div className="text-xs text-gray-500 font-medium">
+                      £{(month.totalRevenue / 1000).toFixed(1)}k
+                    </div>
+                    <div
+                      className="animate-chart-bar bg-gradient-to-t from-green-600 to-green-400 rounded-t w-full min-h-[8px] shadow-sm"
+                      style={{ height: `${height}%` }}
+                    />
+                    <div className="text-xs text-gray-500">
+                      {month.month.split('-')[1]}/{month.month.split('-')[0].slice(2)}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </CardContent>
         </Card>
 
-        {/* Spendings Chart */}
+        {/* Property Information */}
         <Card className="animate-card hover-lift shadow-sm bg-white/80 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">Spendings</CardTitle>
-            <p className="text-sm text-gray-500">Lorem ipsum dolor sit amet consectetur adipiscing elit sed do</p>
-          </CardHeader>
-          <CardContent>
-            <div className="relative w-40 h-40 mx-auto mb-6">
-              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                {/* Background circle */}
-                <circle cx="50" cy="50" r="35" fill="none" stroke="#e5e7eb" strokeWidth="12" />
-                {/* Account - 35% (Blue) */}
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="35"
-                  fill="none"
-                  stroke="#3b82f6"
-                  strokeWidth="12"
-                  strokeDasharray="76.97 219.91"
-                  strokeDashoffset="0"
-                  className="animate-progress"
-                  strokeLinecap="round"
-                />
-                {/* Services - 45% (Green) */}
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="35"
-                  fill="none"
-                  stroke="#10b981"
-                  strokeWidth="12"
-                  strokeDasharray="98.96 219.91"
-                  strokeDashoffset="-76.97"
-                  className="animate-progress"
-                  strokeLinecap="round"
-                />
-                {/* Restaurant - 12% (Orange) */}
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="35"
-                  fill="none"
-                  stroke="#f97316"
-                  strokeWidth="12"
-                  strokeDasharray="26.39 219.91"
-                  strokeDashoffset="-175.93"
-                  className="animate-progress"
-                  strokeLinecap="round"
-                />
-                {/* Others - 8% (Gray) */}
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="35"
-                  fill="none"
-                  stroke="#9ca3af"
-                  strokeWidth="12"
-                  strokeDasharray="17.59 219.91"
-                  strokeDashoffset="-202.32"
-                  className="animate-progress"
-                  strokeLinecap="round"
-                />
-                {/* Center white circle */}
-                <circle cx="50" cy="50" r="20" fill="white" />
-                {/* Center icon */}
-                <circle cx="50" cy="50" r="8" fill="#e5e7eb" />
-              </svg>
-            </div>
-            <div className="space-y-3">
-              {[
-                { color: "bg-blue-500", label: "Account", percentage: "35%" },
-                { color: "bg-green-500", label: "Services", percentage: "45%" },
-                { color: "bg-orange-500", label: "Restaurant", percentage: "12%" },
-                { color: "bg-gray-400", label: "Others", percentage: "8%" },
-              ].map((item, index) => (
-                <div key={index} className="flex items-center justify-between animate-stat">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 ${item.color} rounded-full`}></div>
-                    <span className="text-sm font-medium">{item.label}</span>
-                  </div>
-                  <span className="text-sm font-semibold">{item.percentage}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Analytics Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
-        {/* Product Analytics */}
-        <Card className="animate-card hover-lift shadow-sm bg-white/80 backdrop-blur-sm">
-          <CardContent className="p-4 lg:p-6">
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-gray-600">Product Viewed</span>
-                  <span className="text-sm text-gray-500">680/days</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                  <div
-                    className="animate-progress h-2 bg-gradient-to-r from-teal-500 to-teal-600 rounded-full"
-                    style={{ "--progress-width": "75%" } as React.CSSProperties}
-                  ></div>
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-gray-600">Product Listed</span>
-                  <span className="text-sm text-gray-500">3,456 Unit</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                  <div
-                    className="animate-progress h-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full"
-                    style={{ "--progress-width": "85%" } as React.CSSProperties}
-                  ></div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Properties Map Location */}
-        <Card className="animate-card hover-lift shadow-sm bg-white/80 backdrop-blur-sm">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg font-semibold">Properties Map Location</CardTitle>
-            <Button variant="ghost" size="icon" className="animate-button">
-              <MoreHorizontal className="w-4 h-4" />
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {[
-                { region: "Europe", units: "653 Unit", progress: 90 },
-                { region: "Asia", units: "653 Unit", progress: 85 },
-                { region: "Africa", units: "653 Unit", progress: 60 },
-                { region: "Australia", units: "653 Unit", progress: 40 },
-                { region: "America", units: "653 Unit", progress: 30 },
-              ].map((item, index) => (
-                <div key={index}>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">{item.region}</span>
-                    <span className="text-sm font-medium">{item.units}</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden mt-1">
-                    <div
-                      className="animate-progress h-2 bg-gradient-to-r from-teal-500 to-teal-600 rounded-full"
-                      style={{ "--progress-width": `${item.progress}%` } as React.CSSProperties}
-                    ></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Overview with Area Chart */}
-        <Card className="animate-card hover-lift shadow-sm lg:col-span-2 xl:col-span-1 bg-white/80 backdrop-blur-sm">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg font-semibold">Overview</CardTitle>
-            <Button variant="ghost" size="icon" className="animate-button">
-              <MoreHorizontal className="w-4 h-4" />
-            </Button>
+            <CardTitle className="text-lg font-semibold">Lodge Portfolio</CardTitle>
+            <p className="text-sm text-gray-500">Property details & pricing</p>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Summary Cards */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center gap-3 p-3 border border-blue-200 rounded-lg bg-blue-50/50">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Building2 className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-600">Total Sale</p>
-                  <p className="text-sm font-bold text-gray-900">2,346 Unit</p>
-                </div>
+            <div className="text-center py-4">
+              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Home className="w-8 h-8 text-emerald-600" />
               </div>
-              <div className="flex items-center gap-3 p-3 border border-green-200 rounded-lg bg-green-50/50">
-                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                  <Building2 className="w-5 h-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-600">Total Rent</p>
-                  <p className="text-sm font-bold text-gray-900">458 Unit</p>
-                </div>
-              </div>
+              <h3 className="text-2xl font-bold text-gray-900">{dashboardData.properties.active}</h3>
+              <p className="text-gray-500 mb-4">Active Lodges</p>
             </div>
-
-            {/* Percentage Indicator */}
-            <div className="flex items-center justify-end gap-2">
-              <div className="flex items-center text-green-500 text-sm font-medium">
-                <ArrowUp className="w-4 h-4 mr-1" />
-                0.8%
+            
+            <div className="space-y-3 pt-4 border-t">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Avg. Price</span>
+                <span className="text-sm font-semibold">£{dashboardData.properties.avgPrice}/night</span>
               </div>
-              <span className="text-xs text-gray-500">than last week</span>
-            </div>
-
-            {/* Area Chart */}
-            <div className="relative h-48 bg-gray-50 rounded-lg overflow-hidden">
-              <svg className="w-full h-full" viewBox="0 0 400 200">
-                {/* Grid lines */}
-                <defs>
-                  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#f3f4f6" strokeWidth="1" />
-                  </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#grid)" />
-
-                {/* Y-axis labels */}
-                <text x="10" y="20" className="text-xs fill-gray-500">
-                  1,000k
-                </text>
-                <text x="10" y="60" className="text-xs fill-gray-500">
-                  800k
-                </text>
-                <text x="10" y="100" className="text-xs fill-gray-500">
-                  600k
-                </text>
-                <text x="10" y="140" className="text-xs fill-gray-500">
-                  400k
-                </text>
-                <text x="10" y="180" className="text-xs fill-gray-500">
-                  200k
-                </text>
-
-                {/* Blue area (Sold) */}
-                <path
-                  d="M 40 120 Q 80 100 120 110 Q 160 90 200 60 Q 240 80 280 100 Q 320 80 360 90 L 360 180 L 40 180 Z"
-                  fill="url(#blueGradient)"
-                  className="animate-progress"
-                />
-                <path
-                  d="M 40 120 Q 80 100 120 110 Q 160 90 200 60 Q 240 80 280 100 Q 320 80 360 90"
-                  fill="none"
-                  stroke="#3b82f6"
-                  strokeWidth="3"
-                  className="animate-progress"
-                />
-
-                {/* Green area (Rented) */}
-                <path
-                  d="M 40 160 Q 80 150 120 155 Q 160 145 200 140 Q 240 150 280 145 Q 320 140 360 150 L 360 180 L 40 180 Z"
-                  fill="url(#greenGradient)"
-                  className="animate-progress"
-                />
-                <path
-                  d="M 40 160 Q 80 150 120 155 Q 160 145 200 140 Q 240 150 280 145 Q 320 140 360 150"
-                  fill="none"
-                  stroke="#10b981"
-                  strokeWidth="3"
-                  className="animate-progress"
-                />
-
-                {/* Gradients */}
-                <defs>
-                  <linearGradient id="blueGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.3" />
-                    <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.1" />
-                  </linearGradient>
-                  <linearGradient id="greenGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
-                    <stop offset="100%" stopColor="#10b981" stopOpacity="0.1" />
-                  </linearGradient>
-                </defs>
-
-                {/* Data point */}
-                <circle cx="320" cy="80" r="4" fill="#3b82f6" className="animate-float" />
-
-                {/* X-axis labels */}
-                <text x="40" y="195" className="text-xs fill-gray-500">
-                  April
-                </text>
-                <text x="80" y="195" className="text-xs fill-gray-500">
-                  May
-                </text>
-                <text x="120" y="195" className="text-xs fill-gray-500">
-                  June
-                </text>
-                <text x="160" y="195" className="text-xs fill-gray-500">
-                  July
-                </text>
-                <text x="200" y="195" className="text-xs fill-gray-500">
-                  August
-                </text>
-                <text x="240" y="195" className="text-xs fill-gray-500">
-                  September
-                </text>
-                <text x="280" y="195" className="text-xs fill-gray-500">
-                  October
-                </text>
-                <text x="320" y="195" className="text-xs fill-gray-500">
-                  November
-                </text>
-              </svg>
-
-              {/* Tooltip */}
-              <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-3 border animate-stat">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="text-sm font-medium">86 Rented</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                  <span className="text-sm font-medium">24 Sold</span>
-                </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Cleaning Fee</span>
+                <span className="text-sm font-semibold">£{dashboardData.properties.avgCleaningFee}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Pet Fee</span>
+                <span className="text-sm font-semibold">£{dashboardData.properties.avgPetsFee}</span>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Customer Reviews */}
-      <div className="grid grid-cols-1 xl:grid-cols-1 gap-4 lg:gap-6">
+      {/* Booking Management */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-6">
+        {/* Booking Status Details */}
         <Card className="animate-card hover-lift shadow-sm bg-white/80 backdrop-blur-sm">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg font-semibold">Customer Review</CardTitle>
-            <Button variant="ghost" size="icon" className="animate-button">
-              <MoreHorizontal className="w-4 h-4" />
-            </Button>
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">Booking Status</CardTitle>
+            <p className="text-sm text-gray-500">Current booking breakdown</p>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {[
-                { name: "Bella Smith", time: "20m ago", rating: 4, avatar: "BS" },
-                { name: "Samantha William", time: "1h ago", rating: 4, avatar: "SW" },
-                { name: "John Doe", time: "2h ago", rating: 5, avatar: "JD" },
-              ].map((review, index) => (
-                <div key={index} className="flex gap-3 animate-stat">
-                  <Avatar className="flex-shrink-0 animate-float">
-                    <AvatarFallback className="bg-gradient-to-br from-teal-100 to-teal-200 text-teal-700">
-                      {review.avatar}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium">{review.name}</span>
-                      <span className="text-sm text-gray-500">{review.time}</span>
-                    </div>
-                    <div className="flex gap-1 mb-2">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <div
-                          key={star}
-                          className={`w-4 h-4 rounded-sm ${star <= review.rating ? "bg-orange-400" : "bg-gray-200"}`}
-                        ></div>
-                      ))}
-                    </div>
-                    <p className="text-sm text-gray-600">
-                      {index === 0 &&
-                        "Dealing with Syamsudin and Bakri was a joy. I got in touch with Just Property after seeing a couple of properties that caught my eye..."}
-                      {index === 1 &&
-                        "I viewed a number of properties with Just Property and found them to be professional, efficient, patient, courteous and helpful every time."}
-                      {index === 2 &&
-                        "Friendly service Josh, Lunar and everyone at Just Property in Hastings deserved a big Thank You from us for moving us from Jakarta to Medan during the lockdown."}
-                    </p>
-                  </div>
-                </div>
-              ))}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-gray-600">Confirmed Bookings</span>
+                <span className="text-sm font-semibold text-green-600">{dashboardData.bookings.confirmed}</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                <div
+                  className="animate-progress h-2 bg-gradient-to-r from-green-500 to-green-600 rounded-full"
+                  style={{ "--progress-width": `${(dashboardData.bookings.confirmed / dashboardData.bookings.total) * 100}%` } as React.CSSProperties}
+                ></div>
+              </div>
+            </div>
+            
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-gray-600">Pending Bookings</span>
+                <span className="text-sm font-semibold text-yellow-600">{dashboardData.bookings.pending}</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                <div
+                  className="animate-progress h-2 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-full"
+                  style={{ "--progress-width": `${(dashboardData.bookings.pending / dashboardData.bookings.total) * 100}%` } as React.CSSProperties}
+                ></div>
+              </div>
             </div>
 
-            <Button className="w-full bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 animate-button shadow-lg">
-              See More Reviews
-            </Button>
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-gray-600">Cancelled Bookings</span>
+                <span className="text-sm font-semibold text-red-600">{dashboardData.bookings.cancelled}</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                <div
+                  className="animate-progress h-2 bg-gradient-to-r from-red-500 to-red-600 rounded-full"
+                  style={{ "--progress-width": `${(dashboardData.bookings.cancelled / dashboardData.bookings.total) * 100}%` } as React.CSSProperties}
+                ></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* System Overview */}
+        <Card className="animate-card hover-lift shadow-sm bg-white/80 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">System Overview</CardTitle>
+            <p className="text-sm text-gray-500">Current system status</p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                    <Home className="w-4 h-4 text-green-600" />
+                  </div>
+                  <span className="text-sm font-medium">Active Lodges</span>
+                </div>
+                <span className="text-sm font-semibold text-gray-900">{dashboardData.properties.active}</span>
+              </div>
+              
+              <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Users className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <span className="text-sm font-medium">Total Users</span>
+                </div>
+                <span className="text-sm font-semibold text-gray-900">{dashboardData.users.total}</span>
+              </div>
+              
+              <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                    <Calendar className="w-4 h-4 text-orange-600" />
+                  </div>
+                  <span className="text-sm font-medium">Total Bookings</span>
+                </div>
+                <span className="text-sm font-semibold text-gray-900">{dashboardData.bookings.total}</span>
+              </div>
+              
+              <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                    <CheckCircle className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <span className="text-sm font-medium">Enquiries</span>
+                </div>
+                <span className="text-sm font-semibold text-gray-900">{dashboardData.enquiries.total}</span>
+              </div>
+              
+              <div className="flex items-center justify-between py-2">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                    <Star className="w-4 h-4 text-gray-600" />
+                  </div>
+                  <span className="text-sm font-medium">Reviews</span>
+                </div>
+                <span className="text-sm font-semibold text-gray-900">{dashboardData.reviews.total}</span>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
+
     </div>
   )
 }
