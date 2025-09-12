@@ -4,13 +4,8 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  Bed,
-  Bath,
-  Wifi,
   Plus,
   X,
-  MapPin,
-  User,
   Image as ImageIcon,
   List,
   Info,

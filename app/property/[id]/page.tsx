@@ -284,12 +284,12 @@ export default function PropertyDetailPage() {
           </Badge>
         </div>
         <div className="flex items-center gap-2">
-          <div className="relative">
+          {/* <div className="relative">
             <input
               placeholder="Search here..."
               className="pl-10 pr-4 py-2 w-80 bg-white border border-gray-200 rounded-lg"
             />
-          </div>
+          </div> */}
           {isEditing ? (
             <div className="flex gap-2">
               <Button
@@ -654,41 +654,6 @@ export default function PropertyDetailPage() {
         </div>
 
         <div className="space-y-6">
-          <Card>
-            <CardContent className="p-6 text-center">
-              <Avatar className="w-20 h-20 mx-auto mb-4">
-                <AvatarFallback className="bg-gray-200 text-gray-700 text-lg">
-                  LK
-                </AvatarFallback>
-              </Avatar>
-              <h3 className="font-semibold text-lg mb-1">Levi Kusnandar</h3>
-              <Badge className="bg-green-100 text-green-700 mb-4">OWNER</Badge>
-              <p className="text-sm text-gray-600 mb-4">
-                Beverly Hills Estate Agent specializing in luxury properties
-                with over 15 years of experience.
-              </p>
-              <div className="flex justify-center gap-2 mb-6">
-                <Button
-                  size="icon"
-                  className="w-8 h-8 bg-teal-600 hover:bg-teal-700"
-                >
-                  <Instagram className="w-4 h-4" />
-                </Button>
-                <Button
-                  size="icon"
-                  className="w-8 h-8 bg-blue-600 hover:bg-blue-700"
-                >
-                  <Facebook className="w-4 h-4" />
-                </Button>
-                <Button
-                  size="icon"
-                  className="w-8 h-8 bg-blue-400 hover:bg-blue-500"
-                >
-                  <Twitter className="w-4 h-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
           {/* Price */}
           <Card>
             <CardHeader>

@@ -183,12 +183,12 @@ export default function CustomersPage() {
                     }`}></div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                {/* <div className="flex items-center gap-2">
                   {getVerificationBadge(visitor)}
+                  </div> */}
                   <Button variant="ghost" size="icon">
                     <MoreHorizontal className="w-4 h-4" />
                   </Button>
-                </div>
               </div>
 
               <div className="space-y-2 mb-4">
@@ -199,7 +199,7 @@ export default function CustomersPage() {
               <div className="flex gap-2 mb-4">
                 <Button 
                   size="icon" 
-                  className="w-8 h-8 bg-teal-600 hover:bg-teal-700"
+                  className="w-8 h-8 bg-teal-600 hover:bg-teal-700 rounded-full"
                   title="Call"
                   disabled={!visitor.mobile}
                 >
